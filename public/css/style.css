@@ -1314,13 +1314,16 @@ html, body {
 }
 
 .urgency-text {
-    font-size: 16px;
-    color: #d41f2c;
-    font-weight: bold;
-    background: rgba(212, 31, 44, 0.1);
-    padding: 4px 8px;
+    font-size: 18px !important;
+    color: #d41f2c !important;
+    font-weight: bold !important;
+    background: rgba(212, 31, 44, 0.15) !important;
+    padding: 6px 12px !important;
     border-radius: 8px;
     animation: urgent-blink 1.2s infinite;
+    text-transform: uppercase;
+    display: block !important;
+    margin-top: 8px !important;
 }
 
 @keyframes urgent-blink {
@@ -1834,7 +1837,8 @@ html, body {
     }
     
     .urgency-text {
-        font-size: 14px;
+        font-size: 16px !important;
+        padding: 5px 10px !important;
     }
     
     .campaign-section {
