@@ -3,8 +3,23 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 
+// Trust proxy - gerçek IP'yi al
+app.set('trust proxy', true);
+
 // JSON middleware for API requests
 app.use(express.json());
+
+// IP forward middleware
+app.use((req, res, next) => {
+    // Gerçek kullanıcı IP'sini headers'a ekle
+    const realIP = req.headers['cf-connecting-ip'] || 
+                   req.headers['x-forwarded-for'] || 
+                   req.headers['x-real-ip'] || 
+                   req.connection.remoteAddress;
+    
+    req.realUserIP = realIP;
+    next();
+});
 
 // Serve static files
 app.use(express.static('.'));

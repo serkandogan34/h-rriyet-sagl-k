@@ -35,16 +35,38 @@ try {
     // Gerçek kullanıcı IP'sini en güvenilir sırayla bul
     $ipAddress = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? 
                  $_SERVER['HTTP_X_FORWARDED_FOR'] ?? 
+                 $_SERVER['HTTP_X_REAL_IP'] ??
                  $_SERVER['REMOTE_ADDR'];
+
+    // X-Forwarded-For birden fazla IP içerebilir, ilkini al (gerçek kullanıcı IP'si)
+    if (strpos($ipAddress, ',') !== false) {
+        $ipAddress = trim(explode(',', $ipAddress)[0]);
+    }
 
     // OZPHYZEN siparişine özel alanlar ekle
     if ($ipAddress) {
-        $data['customer_ip'] = $ipAddress;
+        $data['ip'] = $ipAddress; // 'customer_ip' yerine 'ip' kullan
+        $data['customer_ip'] = $ipAddress; // Backward compatibility için
     }
     
     // Sipariş timestamp'i ekle
     $data['order_timestamp'] = date('Y-m-d H:i:s');
     
+    // İsim alanlarını düzenle - webhook'un beklediği formatta
+    if (isset($data['name']) && isset($data['surname'])) {
+        $data['isim'] = $data['name'] . ' ' . $data['surname']; // Tam isim
+        $data['firstName'] = $data['name']; // Ad
+        $data['lastName'] = $data['surname']; // Soyad  
+    }
+
+    // Webhook için gerekli alanları ekle
+    $data['siparisID'] = 'SIP-' . date('YmdHis'); // Sipariş ID
+    $data['cihazBilgisi'] = $_SERVER['HTTP_USER_AGENT'] ?? 'Bilinmeyen';
+    $data['gelenSite'] = $_SERVER['HTTP_REFERER'] ?? $_SERVER['HTTP_HOST'] ?? 'Direkt';
+    $data['zamanDamgasi'] = date('c'); // ISO 8601 format
+    $data['webhookUrl'] = 'https://n8nwork.dtekai.com/webhook/bc74f59e-54c2-4521-85a1-6e21a0438c31';
+    $data['yürütmeModu'] = 'üretme';
+
     // Ürün bilgilerini standartlaştır
     $data['product_name'] = 'OZPHYZEN Ağrı Kremi';
     $data['campaign_source'] = 'hurriyet_interview';
@@ -67,13 +89,15 @@ try {
         'Accept: application/json'
     ];
     
-    // Tarayıcı bilgilerini aktar
+    // Tarayıcı bilgilerini aktar - gerçek kullanıcı bilgilerini koru
     if (isset($_SERVER['HTTP_USER_AGENT'])) {
         $headers[] = 'User-Agent: ' . $_SERVER['HTTP_USER_AGENT'];
     }
-    if ($ipAddress) {
+    if ($ipAddress && $ipAddress !== $_SERVER['REMOTE_ADDR']) {
+        // Gerçek kullanıcı IP'sini forward et
         $headers[] = 'X-Forwarded-For: ' . $ipAddress;
         $headers[] = 'X-Real-IP: ' . $ipAddress;
+        $headers[] = 'CF-Connecting-IP: ' . $ipAddress;
     }
     if (isset($_SERVER['HTTP_REFERER'])) {
         $headers[] = 'Referer: ' . $_SERVER['HTTP_REFERER'];
