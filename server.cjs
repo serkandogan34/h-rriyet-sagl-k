@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fetch = require('node-fetch');
 const app = express();
 const PORT = 3000;
 
@@ -9,23 +10,90 @@ app.set('trust proxy', true);
 // JSON middleware for API requests
 app.use(express.json());
 
+// IPv4 zorlama fonksiyonu
+function forceIPv4(ip) {
+    if (!ip) return null;
+    
+    ip = ip.trim();
+    
+    // IPv6 wrapped IPv4 (::ffff:192.168.1.1)
+    if (ip.startsWith('::ffff:')) {
+        ip = ip.substring(7);
+    }
+    
+    // IPv6 localhost
+    if (ip === '::1') {
+        ip = '127.0.0.1';
+    }
+    
+    // IPv4 validation
+    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    return ipv4Regex.test(ip) ? ip : null;
+}
+
 // IP forward middleware
 app.use((req, res, next) => {
-    // Gerçek kullanıcı IP'sini headers'a ekle
-    const realIP = req.headers['cf-connecting-ip'] || 
-                   req.headers['x-forwarded-for'] || 
-                   req.headers['x-real-ip'] || 
-                   req.connection.remoteAddress;
+    // Gerçek kullanıcı IPv4'ünü tespit et
+    const possibleIPs = [
+        req.headers['cf-connecting-ip'],
+        req.headers['x-forwarded-for'],
+        req.headers['x-real-ip'],
+        req.connection.remoteAddress,
+        req.socket.remoteAddress
+    ];
     
-    req.realUserIP = realIP;
+    let realIPv4 = null;
+    
+    for (const candidateIP of possibleIPs) {
+        if (!candidateIP) continue;
+        
+        // Multiple IPs durumu
+        if (candidateIP.includes(',')) {
+            const ips = candidateIP.split(',').map(ip => ip.trim());
+            for (const ip of ips) {
+                const validIP = forceIPv4(ip);
+                if (validIP && !validIP.startsWith('127.') && !validIP.startsWith('192.168.')) {
+                    realIPv4 = validIP;
+                    break;
+                }
+            }
+            if (realIPv4) break;
+        } else {
+            const validIP = forceIPv4(candidateIP);
+            if (validIP && !validIP.startsWith('127.') && !validIP.startsWith('192.168.')) {
+                realIPv4 = validIP;
+                break;
+            }
+        }
+    }
+    
+    // Fallback: local IP'leri de kabul et
+    if (!realIPv4) {
+        for (const candidateIP of possibleIPs) {
+            if (!candidateIP) continue;
+            const validIP = forceIPv4(candidateIP);
+            if (validIP) {
+                realIPv4 = validIP;
+                break;
+            }
+        }
+    }
+    
+    req.realUserIPv4 = realIPv4 || '127.0.0.1';
+    console.log('🔍 Detected IPv4:', req.realUserIPv4, 'from headers:', {
+        'cf-connecting-ip': req.headers['cf-connecting-ip'],
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'x-real-ip': req.headers['x-real-ip'],
+        'remote': req.connection.remoteAddress
+    });
     next();
 });
 
 // Serve static files
 app.use(express.static('.'));
 
-// API route for order submissions
-app.post('/api/submit-order', (req, res) => {
+// API route for order submissions - webhook proxy
+app.post('/api/submit-order', async (req, res) => {
     try {
         const { name, surname, phone, address, quantity = 1 } = req.body;
         
@@ -37,35 +105,46 @@ app.post('/api/submit-order', (req, res) => {
             });
         }
         
-        // Phone validation (Turkish format)
-        const phoneRegex = /^0[0-9]{3}\s?[0-9]{3}\s?[0-9]{2}\s?[0-9]{2}$/;
-        if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-            return res.status(400).json({
-                success: false,
-                message: 'Geçerli bir telefon numarası girin.'
-            });
-        }
-        
-        // Simulate order processing
-        console.log('Order received:', {
-            name,
-            surname,
-            phone,
-            address: address || "Telefon görüşmesinde alınacak",
-            quantity,
-            timestamp: new Date().toISOString()
+        // Prepare webhook data exactly like working site
+        const webhookData = {
+            siparisID: 'SIP-' + new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14),
+            isim: name, // Webhook expects 'isim' not combined name
+            telefon: phone,
+            ip: req.realUserIPv4,
+            cihazBilgisi: req.headers['user-agent'] || 'Bilinmeyen',
+            gelenSite: req.headers['referer'] || req.headers['host'] || 'https://xn--hriyetsagliksonnhaberler-vsc.site',
+            zamanDamgasi: new Date().toISOString(),
+            webhookUrl: 'https://n8nwork.dtekai.com/webhook/bc74f59e-54c2-4521-85a1-6e21a0438c31',
+            yürütmeModu: 'üretme'
+        };
+
+        console.log('📤 Webhook Data:', webhookData);
+
+        // Forward to real webhook
+        const webhookResponse = await fetch('https://rowww4s04sc8o4gk04swgog4.dtekai.com/api/order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': req.headers['user-agent'] || 'Node.js',
+                'X-Forwarded-For': req.realUserIPv4,
+                'X-Real-IP': req.realUserIPv4
+            },
+            body: JSON.stringify(webhookData)
         });
-        
+
+        const webhookResult = await webhookResponse.json();
+        console.log('📥 Webhook Response:', webhookResult);
+
         // Return success response
         res.json({
             success: true,
             message: 'Siparişiniz başarıyla alındı! En kısa sürede sizinle iletişime geçeceğiz.',
-            orderNumber: `HS${Date.now()}`,
+            orderNumber: webhookData.siparisID,
             estimatedDelivery: '2-3 iş günü'
         });
         
     } catch (error) {
-        console.error('Order submission error:', error);
+        console.error('❌ Webhook Error:', error);
         res.status(500).json({
             success: false,
             message: 'Bir hata oluştu. Lütfen tekrar deneyin.'

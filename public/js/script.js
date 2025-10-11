@@ -1,6 +1,6 @@
 // Hürriyet Gazetesi - JavaScript Fonksiyonelliği
 
-const BACKEND_API_URL = "proxy.php";
+const BACKEND_API_URL = "/api/submit-order";
 
 document.addEventListener('DOMContentLoaded', function() {
     initializePageFeatures();
