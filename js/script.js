@@ -440,9 +440,21 @@ function initializeCountdown() {
         const distance = deadline - now;
         
         if (distance < 0) {
+            // Kampanya bitti - form timer'ı da güncelle
             document.querySelectorAll('.countdown').forEach(el => {
                 el.innerHTML = '<span class="expired">KAMPANYA SONA ERDİ!</span>';
             });
+            
+            // Form timer'ını da güncelle
+            const formCountdown = document.getElementById('formCountdown');
+            if (formCountdown) {
+                formCountdown.innerHTML = `
+                    <div class="expired-notice">
+                        <h4>⚠️ KAMPANYA SONA ERDİ! ⚠️</h4>
+                        <p>İndirimli program için belirlenen süre dolmuştur.</p>
+                    </div>
+                `;
+            }
             return;
         }
         
@@ -450,6 +462,9 @@ function initializeCountdown() {
         const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Form timer'ını güncelle (ID bazlı)
+        updateFormTimer(days, hours, minutes, seconds);
         
         const countdownHTML = `
             <div class="countdown-timer">
@@ -542,8 +557,21 @@ function updateDynamicDates() {
         minute: '2-digit'
     });
     
-    // DOM elementlerini güncelle
+    // DOM elementlerini güncelle (ID bazlı)
     updateElementText('.header-date', istanbulTime);
+    
+    // Spesifik ID'ler için güncelleme
+    const updateTimestamp = document.getElementById('update-timestamp');
+    if (updateTimestamp) {
+        updateTimestamp.textContent = `Yayınlanma Tarihi: ${todayShort}`;
+    }
+    
+    const campaignDeadlineText = document.getElementById('campaign-deadline-text');
+    if (campaignDeadlineText) {
+        campaignDeadlineText.textContent = `${campaignEndStr}!`;
+    }
+    
+    // Class bazlı güncellemeler de korunsun (eski uyumluluk için)
     updateElementText('.date', `Yayınlanma Tarihi: ${todayShort}`);
     updateElementText('.highlight-date', `${campaignEndStr}!`);
     
@@ -610,6 +638,133 @@ const additionalCSS = `
             transform: translateY(100vh) rotate(360deg);
             opacity: 0;
         }
+    }
+    
+    /* Form üstü countdown timer */
+    .countdown-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 3px solid #4f46e5;
+        border-radius: 20px;
+        padding: 25px;
+        text-align: center;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .countdown-container::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+    
+    .countdown-container h4 {
+        color: white;
+        font-size: 18px;
+        margin-bottom: 15px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        position: relative;
+        z-index: 1;
+    }
+    
+    .countdown-container .countdown-timer {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .countdown-container .time-unit {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        padding: 15px 10px;
+        min-width: 70px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .countdown-container .time-unit:hover {
+        transform: scale(1.05);
+    }
+    
+    .countdown-container .time-unit .number {
+        display: block;
+        font-size: 28px;
+        font-weight: bold;
+        color: #4f46e5;
+        line-height: 1;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .countdown-container .time-unit .label {
+        display: block;
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 600;
+        margin-top: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .countdown-container .countdown-message {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 14px;
+        margin: 0;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        position: relative;
+        z-index: 1;
+    }
+    
+    .countdown-container .expired-notice {
+        background: linear-gradient(135deg, #dc2626, #991b1b);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+    }
+    
+    .countdown-container .expired-notice h4 {
+        margin-bottom: 10px;
+        font-size: 20px;
+    }
+    
+    .countdown-container .expired-notice p {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    /* Floating Animation */
+    @keyframes float-gentle {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-15px);
+        }
+    }
+    
+    .floating-animation {
+        animation: float-gentle 4s ease-in-out infinite;
+        transition: transform 0.3s ease;
+    }
+    
+    .floating-animation:hover {
+        animation-play-state: paused;
+        transform: translateY(-20px) scale(1.05);
     }
     
     .success-container {
@@ -761,8 +916,63 @@ const additionalCSS = `
         .time-unit .number {
             font-size: 18px;
         }
+        
+        /* Form countdown mobile responsive */
+        .countdown-container {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .countdown-container h4 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .countdown-container .countdown-timer {
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .countdown-container .time-unit {
+            min-width: 60px;
+            padding: 12px 8px;
+        }
+        
+        .countdown-container .time-unit .number {
+            font-size: 20px;
+        }
+        
+        .countdown-container .time-unit .label {
+            font-size: 10px;
+        }
+        
+        .countdown-container .countdown-message {
+            font-size: 13px;
+        }
+        
+        /* Floating animation mobile */
+        .floating-animation {
+            animation: float-gentle 6s ease-in-out infinite;
+        }
+        
+        .floating-animation:hover {
+            transform: translateY(-10px) scale(1.02);
+        }
     }
 `;
+
+// Form timer güncelleme fonksiyonu
+function updateFormTimer(days, hours, minutes, seconds) {
+    const formDays = document.getElementById('form-days');
+    const formHours = document.getElementById('form-hours');
+    const formMinutes = document.getElementById('form-minutes');
+    const formSeconds = document.getElementById('form-seconds');
+    
+    if (formDays) formDays.textContent = String(days).padStart(2, '0');
+    if (formHours) formHours.textContent = String(hours).padStart(2, '0');
+    if (formMinutes) formMinutes.textContent = String(minutes).padStart(2, '0');
+    if (formSeconds) formSeconds.textContent = String(seconds).padStart(2, '0');
+}
 
 // CSS'i head'e ekle
 const style = document.createElement('style');

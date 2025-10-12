@@ -87,7 +87,7 @@
                     
                     <div class="article-meta">
                         <div class="meta-info">
-                            <span class="date">Yayınlanma Tarihi: 13/09/2025</span>
+                            <span class="date" id="update-timestamp">Yayınlanma Tarihi: 13/09/2025</span>
                             <span class="author">Hürriyet Sağlık Servisi</span>
                             <span class="read-time">Okuma Süresi: 12 dk</span>
                         </div>
@@ -395,7 +395,7 @@
                     <div class="campaign-section">
                         <!-- OZPHYZEN Kutu Görseli -->
                         <div class="campaign-product-image">
-                            <img src="images/ozphyzen-box-transparent.png" alt="OZPHYZEN Kutu" class="campaign-product-box">
+                            <img src="images/ozphyzen-box-clean.png" alt="OZPHYZEN Eklem Ağrısı Kremi" class="campaign-product-box floating-animation">
                         </div>
                         <h2>TÜRKİYE'YE ÖZEL TANITIM PROGRAMI İÇİN SON ŞANSINIZ!</h2>
                         
@@ -409,7 +409,7 @@
                                 <p><strong>Prof. Dr. Mehmet Öz</strong> ve ekibi, Türkiye için ilk etapta <strong>20.000 kutu OZPHYZEN</strong> ayırdı. Ancak yoğun talep nedeniyle stoklar tükenmek üzere.</p>
                                 
                                 <div class="deadline-container">
-                                    <h4>Bu özel indirimli program için SON GÜN: <span class="highlight-date">15 Eylül 2025!</span></h4>
+                                    <h4>Bu özel indirimli program için SON GÜN: <span class="highlight-date" id="campaign-deadline-text">15 Eylül 2025!</span></h4>
                                 </div>
                                 
                                 <p>Bu tarihten sonra ya da stoklar bittiğinde, OZPHYZEN ya bir daha bulunamayacak ya da çok daha yüksek bir fiyattan satışa çıkacak. Ağrılarla dolu bir hayata veya riskli bir ameliyata mahkum olmak istemiyorsanız, bu hayatınızın fırsatı olabilir.</p>
@@ -441,6 +441,30 @@
                     
                     <div class="order-form-section">
                         <div class="form-container">
+                            <!-- FORM ÜSTİ COUNTDOWN TIMER -->
+                            <div class="countdown-container" id="formCountdown">
+                                <h4>⏰ KAMPANYA BİTİŞİNE KALAN SÜRE</h4>
+                                <div class="countdown-timer">
+                                    <div class="time-unit">
+                                        <span class="number" id="form-days">--</span>
+                                        <span class="label">GÜN</span>
+                                    </div>
+                                    <div class="time-unit">
+                                        <span class="number" id="form-hours">--</span>
+                                        <span class="label">SAAT</span>
+                                    </div>
+                                    <div class="time-unit">
+                                        <span class="number" id="form-minutes">--</span>
+                                        <span class="label">DAKİKA</span>
+                                    </div>
+                                    <div class="time-unit">
+                                        <span class="number" id="form-seconds">--</span>
+                                        <span class="label">SANİYE</span>
+                                    </div>
+                                </div>
+                                <p class="countdown-message">Bu fırsatı kaçırmayın! İndirimli fiyat sadece kampanya süresince geçerlidir.</p>
+                            </div>
+                            
                             <h3>RESMİ BAŞVURU FORMU</h3>
                             <p>OZPHYZEN siparişi için aşağıdaki bilgileri doldurun:</p>
                             
